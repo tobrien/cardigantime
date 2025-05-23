@@ -7,7 +7,7 @@
     "types": "dist/cardigantime.d.ts",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/theunwalked/cardigantime.git"
+        "url": "git+https://github.com/SemicolonAmbulance/cardigantime.git"
     },
     "packageManager": "pnpm@10.11.0",
     "exports": {
