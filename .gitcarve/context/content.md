@@ -1,0 +1,1 @@
+Cardigantime allows you to configure a command-line tool from a default configuration file.
