@@ -128,7 +128,7 @@ export async function discoverConfigDirectories(
         level++;
     }
 
-    logger?.debug(`Discovery complete. Found ${discoveredDirs.length} config directories`);
+    logger?.verbose(`Discovery complete. Found ${discoveredDirs.length} config directories`);
     return discoveredDirs;
 }
 
@@ -151,7 +151,7 @@ export async function loadConfigFromDirectory(
     const configFilePath = path.join(configDir, configFileName);
 
     try {
-        logger?.debug(`Attempting to load config file: ${configFilePath}`);
+        logger?.verbose(`Attempting to load config file: ${configFilePath}`);
 
         const exists = await storage.exists(configFilePath);
         if (!exists) {
@@ -169,7 +169,7 @@ export async function loadConfigFromDirectory(
         const parsedYaml = yaml.load(yamlContent);
 
         if (parsedYaml !== null && typeof parsedYaml === 'object') {
-            logger?.debug(`Successfully loaded config from: ${configFilePath}`);
+            logger?.verbose(`Successfully loaded config from: ${configFilePath}`);
             return parsedYaml as object;
         } else {
             logger?.debug(`Config file contains invalid format: ${configFilePath}`);
@@ -293,13 +293,13 @@ export async function loadHierarchicalConfig(
 ): Promise<HierarchicalConfigResult> {
     const { configFileName, encoding = 'utf8', logger } = options;
 
-    logger?.debug('Starting hierarchical configuration loading');
+    logger?.verbose('Starting hierarchical configuration loading');
 
     // Discover all configuration directories
     const discoveredDirs = await discoverConfigDirectories(options);
 
     if (discoveredDirs.length === 0) {
-        logger?.debug('No configuration directories found');
+        logger?.verbose('No configuration directories found');
         return {
             config: {},
             discoveredDirs: [],
@@ -339,7 +339,7 @@ export async function loadHierarchicalConfig(
     // Merge all configurations with proper precedence
     const mergedConfig = deepMergeConfigs(configs);
 
-    logger?.debug(`Hierarchical loading complete. Merged ${configs.length} configurations`);
+    logger?.verbose(`Hierarchical loading complete. Merged ${configs.length} configurations`);
 
     return {
         config: mergedConfig,

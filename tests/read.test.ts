@@ -317,7 +317,7 @@ key2: 123`;
 
             const config = await read(baseArgs, baseOptions);
 
-            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
+            expect(mockLogger.verbose).toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
             expect(mockLogger.error).not.toHaveBeenCalled();
             expect(config).toEqual({
                 configDirectory: baseOptions.defaults.configDirectory // Only default values applied
@@ -330,7 +330,7 @@ key2: 123`;
 
             const config = await read(baseArgs, baseOptions);
 
-            expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
+            expect(mockLogger.verbose).toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
             expect(mockLogger.error).not.toHaveBeenCalled();
             expect(config).toEqual({
                 configDirectory: baseOptions.defaults.configDirectory // Only default values applied
@@ -351,7 +351,7 @@ key2: 123`;
 
                 const config = await read(baseArgs, baseOptions);
 
-                expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
+                expect(mockLogger.verbose).toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
                 expect(mockLogger.error).not.toHaveBeenCalled();
                 expect(config).toEqual({
                     configDirectory: baseOptions.defaults.configDirectory
@@ -367,7 +367,7 @@ key2: 123`;
 
             expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining(`Failed to load or parse configuration`));
             expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining(error.message));
-            expect(mockLogger.debug).not.toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
+            expect(mockLogger.verbose).not.toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
             expect(config).toEqual({
                 configDirectory: baseOptions.defaults.configDirectory // Only default values applied even on error
             });
@@ -736,7 +736,7 @@ key3: undefined`;
 
             const config = await read(baseArgs, hierarchicalOptions);
 
-            expect(mockLogger.debug).toHaveBeenCalledWith('Hierarchical configuration discovery enabled');
+            expect(mockLogger.verbose).toHaveBeenCalledWith('Hierarchical configuration discovery enabled');
             expect(mockLoadHierarchicalConfig).toHaveBeenCalledWith({
                 configDirName: '.kodrdriv',
                 configFileName: 'config.yaml',
@@ -776,7 +776,7 @@ key3: undefined`;
 
             const config = await read(baseArgs, hierarchicalOptions);
 
-            expect(mockLogger.debug).toHaveBeenCalledWith('Hierarchical discovery found 2 configuration directories');
+            expect(mockLogger.verbose).toHaveBeenCalledWith('Hierarchical discovery found 2 configuration directories');
             expect(mockLogger.debug).toHaveBeenCalledWith('  Level 0: /project/.kodrdriv');
             expect(mockLogger.debug).toHaveBeenCalledWith('  Level 1: /.kodrdriv');
             expect(config).toEqual({
@@ -807,7 +807,7 @@ key3: undefined`;
 
             const config = await read(baseArgs, hierarchicalOptions);
 
-            expect(mockLogger.debug).toHaveBeenCalledWith('No configuration directories found in hierarchy');
+            expect(mockLogger.verbose).toHaveBeenCalledWith('No configuration directories found in hierarchy');
             expect(config).toEqual({
                 configDirectory: '/project/.kodrdriv'
             });
@@ -868,7 +868,7 @@ key3: undefined`;
             const config = await read(baseArgs, hierarchicalOptions);
 
             expect(mockLogger.error).toHaveBeenCalledWith('Hierarchical configuration loading failed: Hierarchical discovery failed');
-            expect(mockLogger.debug).toHaveBeenCalledWith('Falling back to single directory configuration loading');
+            expect(mockLogger.verbose).toHaveBeenCalledWith('Falling back to single directory configuration loading');
             expect(config).toEqual({
                 fallback: 'config',
                 configDirectory: '/project/.kodrdriv'
@@ -897,7 +897,7 @@ key3: undefined`;
             const config = await read(baseArgs, hierarchicalOptions);
 
             expect(mockLogger.error).toHaveBeenCalledWith('Hierarchical configuration loading failed: Unknown error');
-            expect(mockLogger.debug).toHaveBeenCalledWith('Falling back to single directory configuration loading');
+            expect(mockLogger.verbose).toHaveBeenCalledWith('Falling back to single directory configuration loading');
             expect(config).toEqual({
                 fallback: 'config',
                 configDirectory: '/project/.kodrdriv'
@@ -921,7 +921,7 @@ key3: undefined`;
 
             const config = await read(baseArgs, singleDirOptions);
 
-            expect(mockLogger.debug).toHaveBeenCalledWith('Using single directory configuration loading');
+            expect(mockLogger.verbose).toHaveBeenCalledWith('Using single directory configuration loading');
             expect(mockLogger.debug).not.toHaveBeenCalledWith('Hierarchical configuration discovery enabled');
             expect(mockLoadHierarchicalConfig).not.toHaveBeenCalled();
             expect(config).toEqual({
@@ -1049,7 +1049,7 @@ key3: undefined`;
 
                 const config = await read(baseArgs, baseOptions);
 
-                expect(mockLogger.debug).toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
+                expect(mockLogger.verbose).toHaveBeenCalledWith(expect.stringContaining('Configuration file not found'));
                 expect(mockLogger.error).not.toHaveBeenCalled();
             }
         });

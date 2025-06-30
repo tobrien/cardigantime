@@ -213,7 +213,8 @@ describe('validate', () => {
         const options: Options<typeof shape.shape> = { ...baseOptions, configShape: shape.shape };
 
         await expect(validate(config as any, options)).rejects.toThrow('Configuration validation failed. Check logs for details.');
-        expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Configuration validation failed:'), expect.any(String));
+        expect(mockLogger.error).toHaveBeenCalledWith('Configuration validation failed. Check logs for details.');
+        expect(mockLogger.silly).toHaveBeenCalledWith(expect.stringContaining('Configuration validation failed:'), expect.any(String));
     });
 
     test('should throw error for extra nested keys', async () => {

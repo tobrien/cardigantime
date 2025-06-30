@@ -284,7 +284,8 @@ export const validate = async <T extends z.ZodRawShape>(config: z.infer<ZodObjec
 
     if (!validationResult.success) {
         const formattedError = JSON.stringify(validationResult.error.format(), null, 2);
-        logger.error('Configuration validation failed: %s', formattedError);
+        logger.error('Configuration validation failed. Check logs for details.');
+        logger.silly('Configuration validation failed: %s', formattedError);
         throw ConfigurationError.validation('Configuration validation failed. Check logs for details.', validationResult.error);
     }
 
