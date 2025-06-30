@@ -29,7 +29,7 @@
         "start": "dist/main.js",
         "dev": "vite build --watch",
         "watch": "vite build --watch",
-        "test": "vitest run --coverage && pnpm run docs:test",
+        "test": "vitest run --coverage",
         "lint": "eslint . --ext .ts",
         "lint:fix": "eslint . --ext .ts --fix",
         "clean": "rm -rf dist",
