@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import { glob } from 'glob';
 import path from 'path';
 import crypto from 'crypto';
+import { FileSystemError } from '../error/FileSystemError';
 /**
  * This module exists to isolate filesystem operations from the rest of the codebase.
  * This makes testing easier by avoiding direct fs mocking in jest configuration.
@@ -99,11 +100,31 @@ export const create = (params: { log?: (message: string, ...args: any[]) => void
         try {
             await fs.promises.mkdir(path, { recursive: true });
         } catch (mkdirError: any) {
-            throw new Error(`Failed to create output directory ${path}: ${mkdirError.message} ${mkdirError.stack}`);
+            throw FileSystemError.directoryCreationFailed(path, mkdirError);
         }
     }
 
     const readFile = async (path: string, encoding: string): Promise<string> => {
+        // Validate encoding parameter
+        const validEncodings = ['utf8', 'utf-8', 'ascii', 'latin1', 'base64', 'hex', 'utf16le', 'ucs2', 'ucs-2'];
+        if (!validEncodings.includes(encoding.toLowerCase())) {
+            throw new Error('Invalid encoding specified');
+        }
+
+        // Check file size before reading to prevent DoS
+        try {
+            const stats = await fs.promises.stat(path);
+            const maxFileSize = 10 * 1024 * 1024; // 10MB limit
+            if (stats.size > maxFileSize) {
+                throw new Error('File too large to process');
+            }
+        } catch (error: any) {
+            if (error.code === 'ENOENT') {
+                throw FileSystemError.fileNotFound(path);
+            }
+            throw error;
+        }
+
         return await fs.promises.readFile(path, { encoding: encoding as BufferEncoding });
     }
 
@@ -118,7 +139,7 @@ export const create = (params: { log?: (message: string, ...args: any[]) => void
                 await callback(path.join(directory, file));
             }
         } catch (err: any) {
-            throw new Error(`Failed to glob pattern ${options.pattern} in ${directory}: ${err.message}`);
+            throw FileSystemError.operationFailed(`glob pattern ${options.pattern}`, directory, err);
         }
     }
 

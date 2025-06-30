@@ -137,7 +137,7 @@ describe('validate', () => {
         const config = { port: 8080, extraKey: 'unexpected', configDirectory: '/config' };
         const options: Options<typeof shape.shape> = { ...baseOptions, configShape: shape.shape };
 
-        await expect(validate(config, options)).rejects.toThrow('Configuration validation failed: Unknown keys found (extraKey). Check logs for details.');
+        await expect(validate(config, options)).rejects.toThrow('Unknown configuration keys found: extraKey. Allowed keys are: configDirectory, port');
         expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Unknown configuration keys found: extraKey. Allowed keys are:'));
         expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('configDirectory, port')); // Check allowed keys listing
     });
@@ -151,7 +151,7 @@ describe('validate', () => {
         mockExists.mockResolvedValue(true);
         mockIsDirectoryReadable.mockResolvedValue(false);
 
-        await expect(validate(config, options)).rejects.toThrow(`Config directory exists but is not readable: ${configDir}`);
+        await expect(validate(config, options)).rejects.toThrow('Configuration directory exists but is not readable');
         expect(mockStorageCreate).toHaveBeenCalled();
         expect(mockIsDirectoryReadable).toHaveBeenCalledWith(configDir);
     });
@@ -162,7 +162,7 @@ describe('validate', () => {
         const options: Options<any> = { ...baseOptions, defaults: { ...baseOptions.defaults, isRequired: true }, features: ['config'] };
         mockExists.mockResolvedValue(false);
 
-        await expect(validate(config, options)).rejects.toThrow(`Config directory does not exist and is required: ${configDir}`);
+        await expect(validate(config, options)).rejects.toThrow('Configuration directory does not exist and is required');
         expect(mockStorageCreate).toHaveBeenCalled();
         expect(mockExists).toHaveBeenCalledWith(configDir);
     });
@@ -237,7 +237,7 @@ describe('validate', () => {
         // Check the type passed to validate - it expects the inferred type
         const typedConfig: z.infer<typeof shape> & { configDirectory: string, anotherExtra: string } = configWithTopLevelExtra;
 
-        await expect(validate(typedConfig, options)).rejects.toThrow('Configuration validation failed: Unknown keys found (server.unexpected, anotherExtra). Check logs for details.');
+        await expect(validate(typedConfig, options)).rejects.toThrow('Unknown configuration keys found: server.unexpected, anotherExtra. Allowed keys are: configDirectory, server.port');
         expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Unknown configuration keys found: server.unexpected, anotherExtra. Allowed keys are:'));
         expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('configDirectory, server.port'));
     });
@@ -547,7 +547,7 @@ describe('validate', () => {
 
         test('should throw and log if extra top-level keys exist', () => {
             const config = { known: 'value', nested: { deep: 123 }, extra: 'bad' };
-            expect(() => checkForExtraKeys(config, schema, logger)).toThrow('Configuration validation failed: Unknown keys found (extra). Check logs for details.');
+            expect(() => checkForExtraKeys(config, schema, logger)).toThrow('Unknown configuration keys found: extra. Allowed keys are: known, nested.deep');
             expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Unknown configuration keys found: extra. Allowed keys are: known, nested.deep'));
         });
 
@@ -556,7 +556,7 @@ describe('validate', () => {
             // It won't inherently detect { nested: { deep: 1, extra: 'bad' } } unless 'nested.extra' is somehow a top-level key
             // in the mergedSources object passed to it. Let's simulate that scenario.
             const config = { known: 'value', 'nested.deep': 123, 'nested.extra': 'bad' };
-            expect(() => checkForExtraKeys(config, schema, logger)).toThrow('Configuration validation failed: Unknown keys found (nested.extra). Check logs for details.');
+            expect(() => checkForExtraKeys(config, schema, logger)).toThrow('Unknown configuration keys found: nested.extra. Allowed keys are: known, nested.deep');
             expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Unknown configuration keys found: nested.extra. Allowed keys are: known, nested.deep'));
         });
 
@@ -567,7 +567,7 @@ describe('validate', () => {
                 e: z.array(z.object({ f: z.string() }))
             });
             const config = { a: '1', b: { c: 2 }, e: [{ f: '3' }], extra: true };
-            expect(() => checkForExtraKeys(config, complexSchema, logger)).toThrow('Configuration validation failed: Unknown keys found (extra). Check logs for details.');
+            expect(() => checkForExtraKeys(config, complexSchema, logger)).toThrow('Unknown configuration keys found: extra. Allowed keys are: a, b.c, b.d, e.f');
             expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Unknown configuration keys found: extra. Allowed keys are: a, b.c, b.d, e.f'));
         });
 
@@ -645,7 +645,7 @@ describe('validate', () => {
                 'config.extraKey': 'not allowed',
                 'topLevel.extra': 'not allowed'
             };
-            expect(() => checkForExtraKeys(config, mixedSchema, logger)).toThrow('Configuration validation failed: Unknown keys found (config.extraKey, topLevel.extra). Check logs for details.');
+            expect(() => checkForExtraKeys(config, mixedSchema, logger)).toThrow('Unknown configuration keys found: config.extraKey, topLevel.extra. Allowed keys are: metadata, config.port');
             expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('Unknown configuration keys found: config.extraKey, topLevel.extra'));
         });
 
@@ -661,7 +661,7 @@ describe('validate', () => {
                 'config.port': 8080,
                 'config.extra': 'not allowed'
             };
-            expect(() => checkForExtraKeys(config, multiRecordSchema, logger)).toThrow('Configuration validation failed: Unknown keys found (config.extra). Check logs for details.');
+            expect(() => checkForExtraKeys(config, multiRecordSchema, logger)).toThrow('Unknown configuration keys found: config.extra. Allowed keys are: metadata, data, config.port');
         });
 
         test('should use console as fallback logger', () => {

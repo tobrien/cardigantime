@@ -320,18 +320,24 @@ describe('Storage Utility', () => {
             mockMkdir.mockRejectedValueOnce(new Error('Failed to create directory'));
 
             await expect(storage.createDirectory('/test/dir')).rejects.toThrow(
-                'Failed to create output directory /test/dir: Failed to create directory'
+                'Failed to create directory: Failed to create directory'
             );
         });
     });
 
     describe('readFile', () => {
         it('should read file successfully', async () => {
+            mockStat.mockResolvedValueOnce({
+                size: 1024, // Mock file size
+                isDirectory: () => false,
+                isFile: () => true
+            });
             mockReadFile.mockResolvedValueOnce('file content');
 
             const result = await storage.readFile('/test/file.txt', 'utf8');
 
             expect(result).toBe('file content');
+            expect(mockStat).toHaveBeenCalledWith('/test/file.txt');
             expect(mockReadFile).toHaveBeenCalledWith('/test/file.txt', { encoding: 'utf8' });
         });
     });
@@ -446,11 +452,18 @@ describe('Storage Utility', () => {
                 digest: vi.fn().mockReturnValue('0123456789abcdef0123456789abcdef')
             };
 
+            // Mock stat for file size check in readFile
+            mockStat.mockResolvedValueOnce({
+                size: 1024,
+                isDirectory: () => false,
+                isFile: () => true
+            });
             mockReadFile.mockResolvedValueOnce(fileContent);
             mockCrypto.createHash.mockReturnValueOnce(mockHash);
 
             const result = await storage.hashFile('/test/file.txt', 10);
 
+            expect(mockStat).toHaveBeenCalledWith('/test/file.txt');
             expect(mockReadFile).toHaveBeenCalledWith('/test/file.txt', { encoding: 'utf8' });
             expect(mockCrypto.createHash).toHaveBeenCalledWith('sha256');
             expect(mockHash.update).toHaveBeenCalledWith(fileContent);

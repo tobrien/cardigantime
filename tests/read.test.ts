@@ -15,11 +15,17 @@ vi.mock('js-yaml', () => ({
 
 // Mock path
 const mockPathJoin = vi.fn<typeof path.join>();
+const mockPathNormalize = vi.fn<typeof path.normalize>();
+const mockPathIsAbsolute = vi.fn<typeof path.isAbsolute>();
 vi.mock('path', () => ({
     join: mockPathJoin,
+    normalize: mockPathNormalize,
+    isAbsolute: mockPathIsAbsolute,
     // Mock other path functions if needed, default is fine for join
     default: {
         join: mockPathJoin,
+        normalize: mockPathNormalize,
+        isAbsolute: mockPathIsAbsolute,
     },
 }));
 
@@ -96,6 +102,8 @@ describe('read', () => {
 
         // Default mock implementations
         mockPathJoin.mockImplementation((...args) => args.join('/')); // Simple join mock
+        mockPathNormalize.mockImplementation((p) => p); // Simple normalize mock
+        mockPathIsAbsolute.mockReturnValue(false); // Default to relative paths
         mockYamlLoad.mockReturnValue({ fileKey: 'fileValue' }); // Default valid YAML
         mockReadFile.mockResolvedValue('fileKey: fileValue'); // Default valid file content
     });

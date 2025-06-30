@@ -336,19 +336,207 @@ const cardigantime = create({
 // 4. If not found and isRequired: true, throws error
 ```
 
-## Error Messages and Troubleshooting
+## Error Handling
 
-### Common Errors
+Cardigantime provides structured error types that allow you to handle different failure scenarios programmatically. All custom errors extend the standard JavaScript `Error` class and can be imported from the main package.
 
-**Configuration file not found:**
+### Error Types
+
+```typescript
+import { 
+  ConfigurationError, 
+  FileSystemError, 
+  ArgumentError 
+} from '@theunwalked/cardigantime';
 ```
-Configuration file not found at ./config/config.yaml. Returning empty object.
+
+#### ConfigurationError
+
+Thrown when configuration validation fails, contains extra keys, or schema issues occur.
+
+**Properties:**
+- `errorType`: `'validation' | 'schema' | 'extra_keys'`
+- `details`: Additional error context (e.g., Zod error details, extra keys info)
+- `configPath`: Path to the configuration file (when applicable)
+
+#### FileSystemError
+
+Thrown when file system operations fail (directory access, file reading, etc.).
+
+**Properties:**
+- `errorType`: `'not_found' | 'not_readable' | 'not_writable' | 'creation_failed' | 'operation_failed'`
+- `path`: The file/directory path that caused the error
+- `operation`: The operation that failed
+- `originalError`: The underlying error (when applicable)
+
+#### ArgumentError
+
+Thrown when CLI arguments or function parameters are invalid.
+
+**Properties:**
+- `argument`: The name of the invalid argument
+
+### Error Handling Examples
+
+#### Basic Error Handling
+
+```typescript
+import { create, ConfigurationError, FileSystemError, ArgumentError } from '@theunwalked/cardigantime';
+
+async function setupApp() {
+  const cardigantime = create({
+    defaults: { configDirectory: './config' },
+    configShape: MyConfigSchema.shape,
+  });
+
+  try {
+    const config = await cardigantime.read(args);
+    await cardigantime.validate(config);
+    
+    // Your app logic here
+    await startApp(config);
+    
+  } catch (error) {
+    if (error instanceof ConfigurationError) {
+      handleConfigError(error);
+    } else if (error instanceof FileSystemError) {
+      handleFileSystemError(error);
+    } else if (error instanceof ArgumentError) {
+      handleArgumentError(error);
+    } else {
+      console.error('Unexpected error:', error.message);
+      process.exit(1);
+    }
+  }
+}
 ```
-*Solution:* Create the config file or set `isRequired: false` to make it optional.
+
+#### Detailed Configuration Error Handling
+
+```typescript
+function handleConfigError(error: ConfigurationError) {
+  switch (error.errorType) {
+    case 'validation':
+      console.error('❌ Configuration validation failed');
+      console.error('Details:', JSON.stringify(error.details, null, 2));
+      console.error('Please check your configuration values against the schema.');
+      break;
+      
+    case 'extra_keys':
+      console.error('❌ Unknown configuration keys found');
+      console.error('Extra keys:', error.details.extraKeys.join(', '));
+      console.error('Allowed keys:', error.details.allowedKeys.join(', '));
+      console.error('Please remove the unknown keys or update your schema.');
+      break;
+      
+    case 'schema':
+      console.error('❌ Configuration schema is invalid');
+      console.error('Details:', error.details);
+      break;
+  }
+  
+  if (error.configPath) {
+    console.error(`Configuration file: ${error.configPath}`);
+  }
+  
+  process.exit(1);
+}
+```
+
+#### File System Error Handling
+
+```typescript
+function handleFileSystemError(error: FileSystemError) {
+  switch (error.errorType) {
+    case 'not_found':
+      if (error.operation === 'directory_access') {
+        console.error(`❌ Configuration directory not found: ${error.path}`);
+        console.error('Solutions:');
+        console.error('  1. Create the directory: mkdir -p ' + error.path);
+        console.error('  2. Use a different directory with --config-directory');
+        console.error('  3. Set isRequired: false in your options');
+      } else {
+        console.error(`❌ Configuration file not found: ${error.path}`);
+        console.error('Create the configuration file or check the path.');
+      }
+      break;
+      
+    case 'not_readable':
+      console.error(`❌ Cannot read ${error.path}`);
+      console.error('Check file/directory permissions:');
+      console.error(`  chmod +r ${error.path}`);
+      break;
+      
+    case 'creation_failed':
+      console.error(`❌ Failed to create directory: ${error.path}`);
+      console.error('Original error:', error.originalError?.message);
+      console.error('Check parent directory permissions.');
+      break;
+      
+    case 'operation_failed':
+      console.error(`❌ File operation failed: ${error.operation}`);
+      console.error('Path:', error.path);
+      console.error('Error:', error.originalError?.message);
+      break;
+  }
+  
+  process.exit(1);
+}
+```
+
+#### Argument Error Handling
+
+```typescript
+function handleArgumentError(error: ArgumentError) {
+  console.error(`❌ Invalid argument: ${error.argument}`);
+  console.error(`Error: ${error.message}`);
+  console.error('Please check your command line arguments or function parameters.');
+  process.exit(1);
+}
+```
+
+#### Graceful Degradation
+
+```typescript
+async function setupAppWithFallbacks() {
+  const cardigantime = create({
+    defaults: { configDirectory: './config' },
+    configShape: MyConfigSchema.shape,
+  });
+
+  try {
+    const config = await cardigantime.read(args);
+    await cardigantime.validate(config);
+    return config;
+    
+  } catch (error) {
+    if (error instanceof FileSystemError && error.errorType === 'not_found') {
+      console.warn('⚠️  Configuration not found, using defaults');
+      return getDefaultConfig();
+    }
+    
+    if (error instanceof ConfigurationError && error.errorType === 'extra_keys') {
+      console.warn('⚠️  Unknown config keys found, continuing with valid keys only');
+      // Filter out extra keys and retry
+      const cleanConfig = removeExtraKeys(config, error.details.allowedKeys);
+      await cardigantime.validate(cleanConfig);
+      return cleanConfig;
+    }
+    
+    // Re-throw other errors
+    throw error;
+  }
+}
+```
+
+### Error Messages and Troubleshooting
+
+#### Common Configuration Errors
 
 **Schema validation failed:**
-```
-Configuration validation failed: {
+```typescript
+// Error type: ConfigurationError with errorType: 'validation'
+{
   "port": {
     "_errors": ["Number must be greater than or equal to 1"]
   }
@@ -357,16 +545,42 @@ Configuration validation failed: {
 *Solution:* Fix the configuration values to match your schema requirements.
 
 **Unknown configuration keys:**
-```
-Unknown configuration keys found: databse. Allowed keys are: database, port, host
+```typescript
+// Error type: ConfigurationError with errorType: 'extra_keys'
+// error.details.extraKeys: ['databse']
+// error.details.allowedKeys: ['database', 'port', 'host']
 ```
 *Solution:* Fix typos in your configuration file or update your schema.
 
-**Config directory not readable:**
+#### Common File System Errors
+
+**Configuration directory not found:**
+```typescript
+// Error type: FileSystemError with errorType: 'not_found'
+// error.path: '/etc/myapp'
+// error.operation: 'directory_access'
 ```
-Config directory exists but is not readable: /etc/restricted
+*Solutions:*
+- Create the directory: `mkdir -p /etc/myapp`
+- Use a different directory: `--config-directory ./config`
+- Make it optional: `isRequired: false`
+
+**Directory not readable:**
+```typescript
+// Error type: FileSystemError with errorType: 'not_readable'
+// error.path: '/etc/restricted'
+// error.operation: 'directory_read'
 ```
-*Solution:* Check file permissions or use a different directory.
+*Solution:* Check file permissions: `chmod +r /etc/restricted`
+
+#### Common Argument Errors
+
+**Invalid config directory argument:**
+```typescript
+// Error type: ArgumentError with argument: 'config-directory'
+// Triggered by: --config-directory ""
+```
+*Solution:* Provide a valid directory path: `--config-directory ./config`
 
 ## Contributing
 

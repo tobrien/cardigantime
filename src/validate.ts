@@ -1,8 +1,10 @@
 import { z, ZodObject } from "zod";
 import { ArgumentError } from "./error/ArgumentError";
+import { ConfigurationError } from "./error/ConfigurationError";
+import { FileSystemError } from "./error/FileSystemError";
 import { ConfigSchema, Logger, Options } from "./types";
 import * as Storage from "./util/storage";
-export { ArgumentError };
+export { ArgumentError, ConfigurationError, FileSystemError };
 
 export const listZodKeys = (schema: z.ZodTypeAny, prefix = ''): string[] => {
     // Check if schema has unwrap method (which both ZodOptional and ZodNullable have)
@@ -130,26 +132,24 @@ export const checkForExtraKeys = (mergedSources: object, fullSchema: ZodObject<a
     });
 
     if (extraKeys.length > 0) {
-        const allowedKeysString = Array.from(allowedKeys).join(', ');
-        const extraKeysString = extraKeys.join(', ');
-        const errorMessage = `Unknown configuration keys found: ${extraKeysString}. Allowed keys are: ${allowedKeysString}`;
-        logger.error(errorMessage);
-        throw new Error(`Configuration validation failed: Unknown keys found (${extraKeysString}). Check logs for details.`);
+        const allowedKeysArray = Array.from(allowedKeys);
+        const error = ConfigurationError.extraKeys(extraKeys, allowedKeysArray);
+        logger.error(error.message);
+        throw error;
     }
 }
 
-const validateConfigDirectory = async (configDirectory: string, isRequired: boolean): Promise<void> => {
-    // eslint-disable-next-line no-console
-    const storage = Storage.create({ log: console.log });
+const validateConfigDirectory = async (configDirectory: string, isRequired: boolean, logger?: Logger): Promise<void> => {
+    const storage = Storage.create({ log: logger?.debug || (() => { }) });
     const exists = await storage.exists(configDirectory);
     if (!exists) {
         if (isRequired) {
-            throw new Error(`Config directory does not exist and is required: ${configDirectory}`);
+            throw FileSystemError.directoryNotFound(configDirectory, true);
         }
     } else if (exists) {
         const isReadable = await storage.isDirectoryReadable(configDirectory);
         if (!isReadable) {
-            throw new Error(`Config directory exists but is not readable: ${configDirectory}`);
+            throw FileSystemError.directoryNotReadable(configDirectory);
         }
     }
 }
@@ -158,7 +158,7 @@ export const validate = async <T extends z.ZodRawShape>(config: z.infer<ZodObjec
     const logger = options.logger;
 
     if (options.features.includes('config') && config.configDirectory) {
-        await validateConfigDirectory(config.configDirectory, options.defaults.isRequired);
+        await validateConfigDirectory(config.configDirectory, options.defaults.isRequired, logger);
     }
 
     // Combine the base schema with the user-provided shape
@@ -174,8 +174,9 @@ export const validate = async <T extends z.ZodRawShape>(config: z.infer<ZodObjec
     checkForExtraKeys(config, fullSchema, logger);
 
     if (!validationResult.success) {
-        logger.error('Configuration validation failed: %s', JSON.stringify(validationResult.error.format(), null, 2));
-        throw new Error(`Configuration validation failed. Check logs for details.`);
+        const formattedError = JSON.stringify(validationResult.error.format(), null, 2);
+        logger.error('Configuration validation failed: %s', formattedError);
+        throw ConfigurationError.validation('Configuration validation failed. Check logs for details.', validationResult.error);
     }
 
     return;

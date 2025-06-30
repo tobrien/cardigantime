@@ -8,6 +8,7 @@ import { ConfigSchema } from 'types';
 import { validate } from './validate';
 
 export * from './types';
+export { ArgumentError, ConfigurationError, FileSystemError } from './validate';
 
 // Make create function generic
 export const create = <T extends z.ZodRawShape>(pOptions: {
