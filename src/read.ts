@@ -122,13 +122,13 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
     }
 
     const resolvedConfigDir = validateConfigDirectory(rawConfigDir);
-    logger.debug('Resolved config directory');
+    logger.verbose('Resolved config directory');
 
     let rawFileConfig: object = {};
 
     // Check if hierarchical configuration discovery is enabled
     if (options.features.includes('hierarchical')) {
-        logger.debug('Hierarchical configuration discovery enabled');
+        logger.verbose('Hierarchical configuration discovery enabled');
 
         try {
             // Extract the config directory name from the path for hierarchical discovery
@@ -148,12 +148,12 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
             rawFileConfig = hierarchicalResult.config;
 
             if (hierarchicalResult.discoveredDirs.length > 0) {
-                logger.debug(`Hierarchical discovery found ${hierarchicalResult.discoveredDirs.length} configuration directories`);
+                logger.verbose(`Hierarchical discovery found ${hierarchicalResult.discoveredDirs.length} configuration directories`);
                 hierarchicalResult.discoveredDirs.forEach(dir => {
                     logger.debug(`  Level ${dir.level}: ${dir.path}`);
                 });
             } else {
-                logger.debug('No configuration directories found in hierarchy');
+                logger.verbose('No configuration directories found in hierarchy');
             }
 
             if (hierarchicalResult.errors.length > 0) {
@@ -163,12 +163,12 @@ export const read = async <T extends z.ZodRawShape>(args: Args, options: Options
         } catch (error: any) {
             logger.error('Hierarchical configuration loading failed: ' + (error.message || 'Unknown error'));
             // Fall back to single directory mode
-            logger.debug('Falling back to single directory configuration loading');
+            logger.verbose('Falling back to single directory configuration loading');
             rawFileConfig = await loadSingleDirectoryConfig(resolvedConfigDir, options, logger);
         }
     } else {
         // Use traditional single directory configuration loading
-        logger.debug('Using single directory configuration loading');
+        logger.verbose('Using single directory configuration loading');
         rawFileConfig = await loadSingleDirectoryConfig(resolvedConfigDir, options, logger);
     }
 
@@ -197,7 +197,7 @@ async function loadSingleDirectoryConfig<T extends z.ZodRawShape>(
 ): Promise<object> {
     const storage = Storage.create({ log: logger.debug });
     const configFile = validatePath(options.defaults.configFile, resolvedConfigDir);
-    logger.debug('Attempting to load config file for cardigantime');
+    logger.verbose('Attempting to load config file for cardigantime');
 
     let rawFileConfig: object = {};
 
@@ -209,13 +209,13 @@ async function loadSingleDirectoryConfig<T extends z.ZodRawShape>(
 
         if (parsedYaml !== null && typeof parsedYaml === 'object') {
             rawFileConfig = parsedYaml;
-            logger.debug('Loaded configuration file successfully');
+            logger.verbose('Loaded configuration file successfully');
         } else if (parsedYaml !== null) {
             logger.warn('Ignoring invalid configuration format. Expected an object, got ' + typeof parsedYaml);
         }
     } catch (error: any) {
         if (error.code === 'ENOENT' || /not found|no such file/i.test(error.message)) {
-            logger.debug('Configuration file not found. Using empty configuration.');
+            logger.verbose('Configuration file not found. Using empty configuration.');
         } else {
             // SECURITY FIX: Don't expose internal paths or detailed error information
             logger.error('Failed to load or parse configuration file: ' + (error.message || 'Unknown error'));
