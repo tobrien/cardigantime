@@ -316,11 +316,25 @@ describe('Storage Utility', () => {
             expect(mockMkdir).toHaveBeenCalledWith('/test/dir', { recursive: true });
         });
 
-        it('should throw error if directory creation fails', async () => {
-            mockMkdir.mockRejectedValueOnce(new Error('Failed to create directory'));
+        it('should throw FileSystemError if directory creation fails', async () => {
+            const originalError = new Error('Permission denied') as any;
+            originalError.code = 'EACCES';
+            mockMkdir.mockRejectedValueOnce(originalError);
 
             await expect(storage.createDirectory('/test/dir')).rejects.toThrow(
-                'Failed to create directory: Failed to create directory'
+                'Failed to create directory: Permission denied'
+            );
+
+            expect(mockMkdir).toHaveBeenCalledWith('/test/dir', { recursive: true });
+        });
+
+        it('should handle EEXIST errors', async () => {
+            const existsError = new Error('File exists') as any;
+            existsError.code = 'EEXIST';
+            mockMkdir.mockRejectedValueOnce(existsError);
+
+            await expect(storage.createDirectory('/test/existing')).rejects.toThrow(
+                'Failed to create directory: File exists'
             );
         });
     });
@@ -337,6 +351,88 @@ describe('Storage Utility', () => {
             const result = await storage.readFile('/test/file.txt', 'utf8');
 
             expect(result).toBe('file content');
+            expect(mockStat).toHaveBeenCalledWith('/test/file.txt');
+            expect(mockReadFile).toHaveBeenCalledWith('/test/file.txt', { encoding: 'utf8' });
+        });
+
+        it('should throw error for invalid encoding', async () => {
+            await expect(storage.readFile('/test/file.txt', 'invalid-encoding')).rejects.toThrow(
+                'Invalid encoding specified'
+            );
+
+            // Should not proceed to stat or readFile if encoding is invalid
+            expect(mockStat).not.toHaveBeenCalled();
+            expect(mockReadFile).not.toHaveBeenCalled();
+        });
+
+        it('should accept valid encodings (case insensitive)', async () => {
+            mockStat.mockResolvedValue({
+                size: 1024,
+                isDirectory: () => false,
+                isFile: () => true
+            });
+            mockReadFile.mockResolvedValue('content');
+
+            // Test various valid encodings
+            const validEncodings = ['UTF8', 'utf-8', 'ASCII', 'latin1', 'base64', 'hex', 'utf16le', 'ucs2', 'ucs-2'];
+
+            for (const encoding of validEncodings) {
+                await storage.readFile('/test/file.txt', encoding);
+            }
+
+            expect(mockStat).toHaveBeenCalledTimes(validEncodings.length);
+            expect(mockReadFile).toHaveBeenCalledTimes(validEncodings.length);
+        });
+
+        it('should throw error for file too large', async () => {
+            mockStat.mockResolvedValueOnce({
+                size: 15 * 1024 * 1024, // 15MB - exceeds 10MB limit
+                isDirectory: () => false,
+                isFile: () => true
+            });
+
+            await expect(storage.readFile('/test/large-file.txt', 'utf8')).rejects.toThrow(
+                'File too large to process'
+            );
+
+            expect(mockStat).toHaveBeenCalledWith('/test/large-file.txt');
+            expect(mockReadFile).not.toHaveBeenCalled();
+        });
+
+        it('should throw FileSystemError for file not found (ENOENT)', async () => {
+            const enoentError = new Error('ENOENT: no such file or directory') as any;
+            enoentError.code = 'ENOENT';
+            mockStat.mockRejectedValueOnce(enoentError);
+
+            await expect(storage.readFile('/test/nonexistent.txt', 'utf8')).rejects.toThrow();
+
+            expect(mockStat).toHaveBeenCalledWith('/test/nonexistent.txt');
+            expect(mockReadFile).not.toHaveBeenCalled();
+        });
+
+        it('should re-throw non-ENOENT stat errors', async () => {
+            const permissionError = new Error('Permission denied') as any;
+            permissionError.code = 'EACCES';
+            mockStat.mockRejectedValueOnce(permissionError);
+
+            await expect(storage.readFile('/test/no-permission.txt', 'utf8')).rejects.toThrow(
+                'Permission denied'
+            );
+
+            expect(mockStat).toHaveBeenCalledWith('/test/no-permission.txt');
+            expect(mockReadFile).not.toHaveBeenCalled();
+        });
+
+        it('should handle readFile errors', async () => {
+            mockStat.mockResolvedValueOnce({
+                size: 1024,
+                isDirectory: () => false,
+                isFile: () => true
+            });
+            mockReadFile.mockRejectedValueOnce(new Error('Read error'));
+
+            await expect(storage.readFile('/test/file.txt', 'utf8')).rejects.toThrow('Read error');
+
             expect(mockStat).toHaveBeenCalledWith('/test/file.txt');
             expect(mockReadFile).toHaveBeenCalledWith('/test/file.txt', { encoding: 'utf8' });
         });
@@ -358,6 +454,26 @@ describe('Storage Utility', () => {
             await storage.writeFile('/test/file.txt', buffer, 'utf8');
 
             expect(mockWriteFile).toHaveBeenCalledWith('/test/file.txt', buffer, { encoding: 'utf8' });
+        });
+
+        it('should handle write errors', async () => {
+            mockWriteFile.mockRejectedValueOnce(new Error('Permission denied'));
+
+            await expect(storage.writeFile('/test/file.txt', 'content', 'utf8')).rejects.toThrow(
+                'Permission denied'
+            );
+
+            expect(mockWriteFile).toHaveBeenCalledWith('/test/file.txt', 'content', { encoding: 'utf8' });
+        });
+
+        it('should handle disk full errors', async () => {
+            const diskFullError = new Error('ENOSPC: no space left on device') as any;
+            diskFullError.code = 'ENOSPC';
+            mockWriteFile.mockRejectedValueOnce(diskFullError);
+
+            await expect(storage.writeFile('/test/file.txt', 'content', 'utf8')).rejects.toThrow(
+                'ENOSPC: no space left on device'
+            );
         });
     });
 
@@ -470,6 +586,56 @@ describe('Storage Utility', () => {
             expect(mockHash.digest).toHaveBeenCalledWith('hex');
             expect(result).toBe('0123456789');
         });
+
+        it('should handle different hash lengths', async () => {
+            const mockHash = {
+                update: vi.fn().mockReturnThis(),
+                digest: vi.fn().mockReturnValue('abcdef1234567890abcdef1234567890')
+            };
+
+            mockStat.mockResolvedValueOnce({
+                size: 512,
+                isDirectory: () => false,
+                isFile: () => true
+            });
+            mockReadFile.mockResolvedValueOnce('content');
+            mockCrypto.createHash.mockReturnValueOnce(mockHash);
+
+            const result = await storage.hashFile('/test/file.txt', 16);
+
+            expect(result).toBe('abcdef1234567890');
+            expect(result.length).toBe(16);
+        });
+
+        it('should handle zero length hash', async () => {
+            const mockHash = {
+                update: vi.fn().mockReturnThis(),
+                digest: vi.fn().mockReturnValue('abcdef1234567890')
+            };
+
+            mockStat.mockResolvedValueOnce({
+                size: 512,
+                isDirectory: () => false,
+                isFile: () => true
+            });
+            mockReadFile.mockResolvedValueOnce('content');
+            mockCrypto.createHash.mockReturnValueOnce(mockHash);
+
+            const result = await storage.hashFile('/test/file.txt', 0);
+
+            expect(result).toBe('');
+        });
+
+        it('should propagate readFile errors', async () => {
+            mockStat.mockResolvedValueOnce({
+                size: 1024,
+                isDirectory: () => false,
+                isFile: () => true
+            });
+            mockReadFile.mockRejectedValueOnce(new Error('Read failed'));
+
+            await expect(storage.hashFile('/test/file.txt', 10)).rejects.toThrow('Read failed');
+        });
     });
 
     describe('listFiles', () => {
@@ -515,15 +681,155 @@ describe('Storage Utility', () => {
             expect(callbackFn).toHaveBeenCalledTimes(2);
         });
 
+        it('should handle array patterns', async () => {
+            // @ts-ignore
+            mockGlob.mockResolvedValueOnce(['file1.js', 'file2.ts', 'file3.json']);
+
+            const callbackFn = vi.fn();
+            await storage.forEachFileIn('/test/dir', callbackFn, { pattern: ['*.js', '*.ts'] });
+
+            expect(mockGlob).toHaveBeenCalledWith(['*.js', '*.ts'], expect.objectContaining({ cwd: '/test/dir' }));
+            expect(callbackFn).toHaveBeenCalledTimes(3);
+        });
+
+        it('should use default pattern when no options provided', async () => {
+            // @ts-ignore
+            mockGlob.mockResolvedValueOnce(['file1.txt', 'file2.doc']);
+
+            const callbackFn = vi.fn();
+            await storage.forEachFileIn('/test/dir', callbackFn);
+
+            expect(mockGlob).toHaveBeenCalledWith('*.*', expect.objectContaining({
+                cwd: '/test/dir',
+                nodir: true
+            }));
+        });
+
+        it('should handle empty glob results', async () => {
+            // @ts-ignore
+            mockGlob.mockResolvedValueOnce([]);
+
+            const callbackFn = vi.fn();
+            await storage.forEachFileIn('/test/dir', callbackFn);
+
+            expect(callbackFn).not.toHaveBeenCalled();
+        });
+
+        it('should handle callback errors', async () => {
+            // @ts-ignore
+            mockGlob.mockResolvedValueOnce(['file1.txt']);
+
+            const callbackFn = vi.fn().mockRejectedValueOnce(new Error('Callback failed'));
+
+            await expect(storage.forEachFileIn('/test/dir', callbackFn)).rejects.toThrow('Callback failed');
+
+            expect(callbackFn).toHaveBeenCalledTimes(1);
+        });
+
         it('should throw error if glob fails', async () => {
             mockGlob.mockRejectedValueOnce(new Error('Glob error'));
 
             const callbackFn = vi.fn();
             await expect(storage.forEachFileIn('/test/dir', callbackFn)).rejects.toThrow(
-                'Failed to glob pattern *'
+                'Failed to glob pattern *.*'
             );
 
             expect(callbackFn).not.toHaveBeenCalled();
+        });
+
+        it('should handle glob permission errors', async () => {
+            const permissionError = new Error('Permission denied') as any;
+            permissionError.code = 'EACCES';
+            mockGlob.mockRejectedValueOnce(permissionError);
+
+            const callbackFn = vi.fn();
+            await expect(storage.forEachFileIn('/test/restricted', callbackFn)).rejects.toThrow(
+                'Failed to glob pattern *.*'
+            );
+        });
+    });
+
+    describe('Error handling for stat-dependent methods', () => {
+        describe('isDirectory', () => {
+            it('should handle stat errors', async () => {
+                mockStat.mockRejectedValueOnce(new Error('Permission denied'));
+
+                await expect(storage.isDirectory('/test/restricted')).rejects.toThrow('Permission denied');
+                expect(mockStat).toHaveBeenCalledWith('/test/restricted');
+            });
+        });
+
+        describe('isFile', () => {
+            it('should handle stat errors', async () => {
+                mockStat.mockRejectedValueOnce(new Error('Permission denied'));
+
+                await expect(storage.isFile('/test/restricted')).rejects.toThrow('Permission denied');
+                expect(mockStat).toHaveBeenCalledWith('/test/restricted');
+            });
+        });
+    });
+
+    describe('Edge cases and additional scenarios', () => {
+        it('should handle empty file content in hashFile', async () => {
+            const mockHash = {
+                update: vi.fn().mockReturnThis(),
+                digest: vi.fn().mockReturnValue('e3b0c44298fc1c149afbf4c8996fb924')
+            };
+
+            mockStat.mockResolvedValueOnce({
+                size: 0,
+                isDirectory: () => false,
+                isFile: () => true
+            });
+            mockReadFile.mockResolvedValueOnce('');
+            mockCrypto.createHash.mockReturnValueOnce(mockHash);
+
+            const result = await storage.hashFile('/test/empty.txt', 8);
+
+            expect(mockHash.update).toHaveBeenCalledWith('');
+            expect(result).toBe('e3b0c442');
+        });
+
+        it('should handle very small files in readFile', async () => {
+            mockStat.mockResolvedValueOnce({
+                size: 1, // 1 byte file
+                isDirectory: () => false,
+                isFile: () => true
+            });
+            mockReadFile.mockResolvedValueOnce('a');
+
+            const result = await storage.readFile('/test/tiny.txt', 'utf8');
+
+            expect(result).toBe('a');
+        });
+
+        it('should handle exactly maximum file size in readFile', async () => {
+            mockStat.mockResolvedValueOnce({
+                size: 10 * 1024 * 1024, // Exactly 10MB
+                isDirectory: () => false,
+                isFile: () => true
+            });
+            mockReadFile.mockResolvedValueOnce('large content');
+
+            const result = await storage.readFile('/test/max-size.txt', 'utf8');
+
+            expect(result).toBe('large content');
+        });
+
+        it('should handle special characters in paths', async () => {
+            mockStat.mockResolvedValueOnce({
+                size: 100,
+                isDirectory: () => false,
+                isFile: () => true
+            });
+            mockReadFile.mockResolvedValueOnce('content');
+
+            const specialPath = '/test/file with spaces & symbols!@#$.txt';
+            const result = await storage.readFile(specialPath, 'utf8');
+
+            expect(result).toBe('content');
+            expect(mockStat).toHaveBeenCalledWith(specialPath);
+            expect(mockReadFile).toHaveBeenCalledWith(specialPath, { encoding: 'utf8' });
         });
     });
 });

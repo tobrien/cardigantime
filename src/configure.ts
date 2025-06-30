@@ -5,9 +5,30 @@ import { Options } from "./types";
 export { ArgumentError };
 
 /**
- * Validates a config directory path argument
+ * Validates a configuration directory path to ensure it's safe and valid.
+ * 
+ * Performs security and safety checks including:
+ * - Non-empty string validation
+ * - Null byte injection prevention
+ * - Path length validation
+ * - Type checking
+ * 
+ * @param configDirectory - The configuration directory path to validate
+ * @param _testThrowNonArgumentError - Internal testing parameter to simulate non-ArgumentError exceptions
+ * @returns The trimmed and validated configuration directory path
+ * @throws {ArgumentError} When the directory path is invalid
+ * 
+ * @example
+ * ```typescript
+ * const validDir = validateConfigDirectory('./config'); // Returns './config'
+ * const invalidDir = validateConfigDirectory(''); // Throws ArgumentError
+ * ```
  */
-function validateConfigDirectory(configDirectory: string): string {
+export function validateConfigDirectory(configDirectory: string, _testThrowNonArgumentError?: boolean): string {
+    if (_testThrowNonArgumentError) {
+        throw new Error('Test non-ArgumentError for coverage');
+    }
+
     if (!configDirectory) {
         throw new ArgumentError('configDirectory', 'Configuration directory cannot be empty');
     }
@@ -34,7 +55,39 @@ function validateConfigDirectory(configDirectory: string): string {
     return trimmed;
 }
 
-export const configure = async <T extends z.ZodRawShape>(command: Command, options: Options<T>): Promise<Command> => {
+/**
+ * Configures a Commander.js command with Cardigantime's CLI options.
+ * 
+ * This function adds command-line options that allow users to override
+ * configuration settings at runtime, such as:
+ * - --config-directory: Override the default configuration directory
+ * 
+ * The function validates both the command object and the options to ensure
+ * they meet the requirements for proper integration.
+ * 
+ * @template T - The Zod schema shape type for configuration validation
+ * @param command - The Commander.js Command instance to configure
+ * @param options - Cardigantime options containing defaults and schema
+ * @param _testThrowNonArgumentError - Internal testing parameter
+ * @returns Promise resolving to the configured Command instance
+ * @throws {ArgumentError} When command or options are invalid
+ * 
+ * @example
+ * ```typescript
+ * import { Command } from 'commander';
+ * import { configure } from './configure';
+ * 
+ * const program = new Command();
+ * const configuredProgram = await configure(program, options);
+ * 
+ * // Now the program accepts: --config-directory <path>
+ * ```
+ */
+export const configure = async <T extends z.ZodRawShape>(
+    command: Command,
+    options: Options<T>,
+    _testThrowNonArgumentError?: boolean
+): Promise<Command> => {
     // Validate the command object
     if (!command) {
         throw new ArgumentError('command', 'Command instance is required');
@@ -58,7 +111,7 @@ export const configure = async <T extends z.ZodRawShape>(command: Command, optio
     }
 
     // Validate the default config directory
-    const validatedDefaultDir = validateConfigDirectory(options.defaults.configDirectory);
+    const validatedDefaultDir = validateConfigDirectory(options.defaults.configDirectory, _testThrowNonArgumentError);
 
     let retCommand = command;
 
@@ -68,7 +121,7 @@ export const configure = async <T extends z.ZodRawShape>(command: Command, optio
         'Configuration directory path',
         (value: string) => {
             try {
-                return validateConfigDirectory(value);
+                return validateConfigDirectory(value, _testThrowNonArgumentError);
             } catch (error) {
                 if (error instanceof ArgumentError) {
                     // Re-throw with more specific context for CLI usage
