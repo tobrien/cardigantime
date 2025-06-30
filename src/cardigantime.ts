@@ -8,8 +8,49 @@ import { ConfigSchema } from 'types';
 import { validate } from './validate';
 
 export * from './types';
+export { ArgumentError, ConfigurationError, FileSystemError } from './validate';
 
-// Make create function generic
+/**
+ * Creates a new Cardigantime instance for configuration management.
+ * 
+ * Cardigantime handles the complete configuration lifecycle including:
+ * - Reading configuration from YAML files
+ * - Validating configuration against Zod schemas
+ * - Merging CLI arguments with file configuration and defaults
+ * - Providing type-safe configuration objects
+ * 
+ * @template T - The Zod schema shape type for your configuration
+ * @param pOptions - Configuration options for the Cardigantime instance
+ * @param pOptions.defaults - Default configuration settings
+ * @param pOptions.defaults.configDirectory - Directory to search for configuration files (required)
+ * @param pOptions.defaults.configFile - Name of the configuration file (optional, defaults to 'config.yaml')
+ * @param pOptions.defaults.isRequired - Whether the config directory must exist (optional, defaults to false)
+ * @param pOptions.defaults.encoding - File encoding for reading config files (optional, defaults to 'utf8')
+ * @param pOptions.features - Array of features to enable (optional, defaults to ['config'])
+ * @param pOptions.configShape - Zod schema shape defining your configuration structure (required)
+ * @param pOptions.logger - Custom logger implementation (optional, defaults to console logger)
+ * @returns A Cardigantime instance with methods for configure, read, validate, and setLogger
+ * 
+ * @example
+ * ```typescript
+ * import { create } from '@theunwalked/cardigantime';
+ * import { z } from 'zod';
+ * 
+ * const MyConfigSchema = z.object({
+ *   apiKey: z.string().min(1),
+ *   timeout: z.number().default(5000),
+ *   debug: z.boolean().default(false),
+ * });
+ * 
+ * const cardigantime = create({
+ *   defaults: {
+ *     configDirectory: './config',
+ *     configFile: 'myapp.yaml',
+ *   },
+ *   configShape: MyConfigSchema.shape,
+ * });
+ * ```
+ */
 export const create = <T extends z.ZodRawShape>(pOptions: {
     defaults: Pick<DefaultOptions, 'configDirectory'> & Partial<Omit<DefaultOptions, 'configDirectory'>>,
     features?: Feature[],
