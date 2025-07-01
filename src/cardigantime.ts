@@ -80,6 +80,10 @@ export const create = <T extends z.ZodRawShape>(pOptions: {
     logger?: Logger,
 }): Cardigantime<T> => {
 
+    // Validate that configDirectory is a string
+    if (!pOptions.defaults.configDirectory || typeof pOptions.defaults.configDirectory !== 'string') {
+        throw new Error(`Configuration directory must be a string, received: ${typeof pOptions.defaults.configDirectory} (${JSON.stringify(pOptions.defaults.configDirectory)})`);
+    }
 
     const defaults: DefaultOptions = { ...DEFAULT_OPTIONS, ...pOptions.defaults } as DefaultOptions;
     const features = pOptions.features || DEFAULT_FEATURES;
@@ -102,6 +106,11 @@ export const create = <T extends z.ZodRawShape>(pOptions: {
         const targetDir = configDirectory || options.defaults.configDirectory;
         const configFile = options.defaults.configFile;
         const encoding = options.defaults.encoding;
+
+        // Validate that targetDir is a string
+        if (!targetDir || typeof targetDir !== 'string') {
+            throw new Error(`Configuration directory must be a string, received: ${typeof targetDir} (${JSON.stringify(targetDir)})`);
+        }
 
         logger.verbose(`Generating configuration file in: ${targetDir}`);
 
@@ -129,7 +138,9 @@ export const create = <T extends z.ZodRawShape>(pOptions: {
         const configFilePath = path.join(targetDir, configFile);
 
         // Generate default configuration
+        logger.debug(`Generating defaults for schema with keys: ${Object.keys(options.configShape).join(', ')}`);
         const defaultConfig = generateDefaultConfig(options.configShape, targetDir);
+        logger.debug(`Generated default config: ${JSON.stringify(defaultConfig, null, 2)}`);
 
         // Convert to YAML with nice formatting
         const yamlContent = yaml.dump(defaultConfig, {

@@ -36,10 +36,19 @@ export const extractSchemaDefaults = (schema: z.ZodTypeAny): any => {
         return defaultSchema._def.defaultValue();
     }
 
-    // Handle ZodOptional and ZodNullable - unwrap and recurse
+    // Handle ZodOptional and ZodNullable - only recurse if there's an explicit default
     if (schema._def && (schema._def.typeName === 'ZodOptional' || schema._def.typeName === 'ZodNullable')) {
         const unwrappable = schema as z.ZodOptional<any> | z.ZodNullable<any>;
-        return extractSchemaDefaults(unwrappable.unwrap());
+        const unwrapped = unwrappable.unwrap();
+
+        // Only provide defaults if the unwrapped schema has explicit defaults
+        // This prevents optional arrays/objects from automatically getting [] or {} defaults
+        if (unwrapped._def && unwrapped._def.typeName === 'ZodDefault') {
+            return extractSchemaDefaults(unwrapped);
+        }
+
+        // For optional fields without explicit defaults, return undefined
+        return undefined;
     }
 
     // Handle ZodObject - recursively process shape
@@ -63,6 +72,78 @@ export const extractSchemaDefaults = (schema: z.ZodTypeAny): any => {
         const elementDefaults = extractSchemaDefaults(arraySchema.element);
         // Return an empty array, or an array with one example element if it has defaults
         return elementDefaults !== undefined ? [elementDefaults] : [];
+    }
+
+    // Handle ZodRecord - provide empty object as default
+    if (schema._def && schema._def.typeName === 'ZodRecord') {
+        return {};
+    }
+
+    // For other types, return undefined (no default available)
+    return undefined;
+};
+
+/**
+ * Extracts meaningful defaults for config file generation, including sensible defaults for optional fields.
+ * This is more generous than extractSchemaDefaults for the purpose of creating helpful config files.
+ */
+export const extractConfigFileDefaults = (schema: z.ZodTypeAny): any => {
+    // Handle ZodDefault - extract the default value
+    if (schema._def && schema._def.typeName === 'ZodDefault') {
+        const defaultSchema = schema as z.ZodDefault<any>;
+        return defaultSchema._def.defaultValue();
+    }
+
+    // Handle ZodOptional and ZodNullable - provide sensible defaults for config generation
+    if (schema._def && (schema._def.typeName === 'ZodOptional' || schema._def.typeName === 'ZodNullable')) {
+        const unwrappable = schema as z.ZodOptional<any> | z.ZodNullable<any>;
+        const unwrapped = unwrappable.unwrap();
+
+        // Recurse into the unwrapped schema to get its default or provide a sensible one
+        const unwrappedDefault = extractConfigFileDefaults(unwrapped);
+        if (unwrappedDefault !== undefined) {
+            return unwrappedDefault;
+        }
+
+        // Provide sensible defaults for common types when generating config files
+        if (unwrapped._def) {
+            switch (unwrapped._def.typeName) {
+                case 'ZodBoolean':
+                    return false;
+                case 'ZodNumber':
+                    return 0;
+                case 'ZodString':
+                    return '';
+                case 'ZodArray':
+                    return [];
+                case 'ZodRecord':
+                    return {};
+                case 'ZodObject':
+                    return extractConfigFileDefaults(unwrapped);
+            }
+        }
+
+        return undefined;
+    }
+
+    // Handle ZodObject - recursively process shape
+    if (schema._def && schema._def.typeName === 'ZodObject') {
+        const objectSchema = schema as z.ZodObject<any>;
+        const result: any = {};
+
+        for (const [key, subschema] of Object.entries(objectSchema.shape)) {
+            const defaultValue = extractConfigFileDefaults(subschema as z.ZodTypeAny);
+            if (defaultValue !== undefined) {
+                result[key] = defaultValue;
+            }
+        }
+
+        return Object.keys(result).length > 0 ? result : {};
+    }
+
+    // Handle ZodArray - provide empty array as default
+    if (schema._def && schema._def.typeName === 'ZodArray') {
+        return [];
     }
 
     // Handle ZodRecord - provide empty object as default
@@ -108,8 +189,8 @@ export const generateDefaultConfig = <T extends z.ZodRawShape>(
         ...configShape,
     });
 
-    // Extract defaults from the full schema
-    const defaults = extractSchemaDefaults(fullSchema);
+    // Extract defaults from the full schema using the more generous config file approach
+    const defaults = extractConfigFileDefaults(fullSchema);
 
     // Don't include configDirectory in the generated file since it's runtime-specific
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
