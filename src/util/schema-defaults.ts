@@ -189,8 +189,8 @@ export const generateDefaultConfig = <T extends z.ZodRawShape>(
         ...configShape,
     });
 
-    // Extract defaults from the full schema using the more generous config file approach
-    const defaults = extractConfigFileDefaults(fullSchema);
+    // Extract defaults from the full schema using only explicit defaults
+    const defaults = extractSchemaDefaults(fullSchema);
 
     // Don't include configDirectory in the generated file since it's runtime-specific
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
