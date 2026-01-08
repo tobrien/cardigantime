@@ -324,7 +324,8 @@ async function findConfigFileWithExtension(
     configFileName: string,
     logger: any
 ): Promise<string | null> {
-    const configFilePath = path.join(configDir, configFileName);
+    // Validate the config file name to prevent path traversal
+    const configFilePath = validatePath(configFileName, configDir);
     
     // First try the exact filename as specified
     const exists = await storage.exists(configFilePath);
@@ -341,7 +342,8 @@ async function findConfigFileWithExtension(
     if (ext === '.yaml' || ext === '.yml') {
         const baseName = path.basename(configFileName, ext);
         const alternativeExt = ext === '.yaml' ? '.yml' : '.yaml';
-        const alternativePath = path.join(configDir, baseName + alternativeExt);
+        const alternativeFileName = baseName + alternativeExt;
+        const alternativePath = validatePath(alternativeFileName, configDir);
         
         logger.debug(`Config file not found at ${configFilePath}, trying alternative: ${alternativePath}`);
         
@@ -402,6 +404,11 @@ async function loadSingleDirectoryConfig<T extends z.ZodRawShape>(
             logger.warn('Ignoring invalid configuration format. Expected an object, got ' + typeof parsedYaml);
         }
     } catch (error: any) {
+        // Re-throw security-related errors (path validation failures)
+        if (error.message && /Invalid path|path traversal|absolute path/i.test(error.message)) {
+            throw error;
+        }
+        
         if (error.code === 'ENOENT' || /not found|no such file/i.test(error.message)) {
             logger.verbose('Configuration file not found. Using empty configuration.');
         } else {
