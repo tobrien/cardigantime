@@ -1,11 +1,10 @@
 name: Run Tests
 
 on:
-  push:
+  pull_request:
     branches:
       - main
-      - 'release/**'
-      - 'feature/**'
+      - working
 
 permissions:
   contents: read
