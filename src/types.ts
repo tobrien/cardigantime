@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { ZodObject } from "zod";
 
 import { z } from "zod";
+import { SecurityValidationConfig } from "./security/types";
 
 /**
  * Available features that can be enabled in Cardigantime.
@@ -69,6 +70,11 @@ export interface DefaultOptions {
      * If not specified, all arrays use 'override' behavior (default).
      */
     fieldOverlaps?: FieldOverlapOptions;
+    /** 
+     * Security validation configuration (optional, uses development profile by default).
+     * Enable security features to validate CLI arguments and config file values.
+     */
+    security?: Partial<SecurityValidationConfig>;
 }
 
 /**
