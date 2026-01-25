@@ -192,7 +192,29 @@ export const create = <T extends z.ZodRawShape>(pOptions: {
     }
 }
 
-
-
-
+/**
+ * Type-safe helper for defining configuration in TypeScript/JavaScript files.
+ * 
+ * This is a simple identity function that provides type checking and
+ * autocomplete for configuration objects when using TypeScript config files.
+ * 
+ * @template T - The configuration type
+ * @param config - The configuration object
+ * @returns The same configuration object (identity function)
+ * 
+ * @example
+ * ```typescript
+ * // config.ts
+ * import { defineConfig } from '@theunwalked/cardigantime';
+ * 
+ * export default defineConfig({
+ *   apiKey: process.env.API_KEY || 'default-key',
+ *   timeout: 5000,
+ *   debug: process.env.NODE_ENV === 'development'
+ * });
+ * ```
+ */
+export function defineConfig<T>(config: T): T {
+    return config;
+}
 

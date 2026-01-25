@@ -2,6 +2,25 @@
 
 **Purpose**: Detailed guide on configuring `cardigantime` instances and defining schemas.
 
+## One Schema, Multiple Formats
+
+A key selling point: tool developers define their configuration schema once with Zod, and `cardigantime` automatically supports multiple configuration file formats. End users can choose their preferred format:
+
+| Format | Extensions | Best For |
+|--------|------------|----------|
+| YAML | `.yaml`, `.yml` | Human-readable, hand-edited configs |
+| JSON | `.json` | Programmatic generation, strict syntax |
+| JavaScript | `.js`, `.mjs`, `.cjs` | Dynamic configs, environment-based logic |
+| TypeScript | `.ts`, `.mts`, `.cts` | Type-safe configs, IDE support |
+
+**Priority order** when multiple formats exist (highest to lowest):
+1. TypeScript
+2. JavaScript
+3. JSON
+4. YAML
+
+No additional code or schema definitions needed per format - this is automatic.
+
 ## Schema Definition (Zod)
 
 `cardigantime` relies heavily on `zod` for schema definition. This provides both runtime validation and static type inference.

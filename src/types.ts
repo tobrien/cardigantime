@@ -13,6 +13,58 @@ import { SecurityValidationConfig } from "./security/types";
 export type Feature = 'config' | 'hierarchical';
 
 /**
+ * Supported configuration file formats.
+ * 
+ * - 'yaml': YAML format (.yaml, .yml)
+ * - 'json': JSON format (.json)
+ * - 'javascript': JavaScript module (.js, .mjs, .cjs)
+ * - 'typescript': TypeScript module (.ts, .mts, .cts)
+ */
+export enum ConfigFormat {
+    YAML = 'yaml',
+    JSON = 'json',
+    JavaScript = 'javascript',
+    TypeScript = 'typescript'
+}
+
+/**
+ * Interface for format-specific configuration parsers.
+ * Each parser is responsible for loading and parsing configuration from a specific format.
+ * 
+ * @template T - The type of the parsed configuration object
+ */
+export interface ConfigParser<T = unknown> {
+    /** The format this parser handles */
+    format: ConfigFormat;
+    /** File extensions this parser supports (e.g., ['.yaml', '.yml']) */
+    extensions: string[];
+    /** 
+     * Parses configuration content from a file.
+     * 
+     * @param content - The raw file content as a string
+     * @param filePath - The absolute path to the configuration file
+     * @returns Promise resolving to the parsed configuration object
+     * @throws {Error} When parsing fails or content is invalid
+     */
+    parse(content: string, filePath: string): Promise<T>;
+}
+
+/**
+ * Metadata about where a configuration value came from.
+ * Used for tracking configuration sources and debugging.
+ */
+export interface ConfigSource {
+    /** The format of the configuration file */
+    format: ConfigFormat;
+    /** Absolute path to the configuration file */
+    filePath: string;
+    /** The parsed configuration content */
+    content: unknown;
+    /** Timestamp when the configuration was loaded */
+    loadedAt: Date;
+}
+
+/**
  * Defines how array fields should be merged in hierarchical configurations.
  * 
  * - 'override': Higher precedence arrays completely replace lower precedence arrays (default)
@@ -75,6 +127,24 @@ export interface DefaultOptions {
      * Enable security features to validate CLI arguments and config file values.
      */
     security?: Partial<SecurityValidationConfig>;
+    /**
+     * Optional source metadata for tracking where configuration came from.
+     * Populated automatically when configuration is loaded.
+     */
+    source?: ConfigSource;
+    /**
+     * Allow executable configuration files (JavaScript/TypeScript).
+     * 
+     * **SECURITY WARNING**: Executable configs run with full Node.js permissions
+     * in the same process as your application. Only enable this if you trust
+     * the configuration files being loaded.
+     * 
+     * When disabled (default), JavaScript and TypeScript config files will be
+     * ignored with a warning message.
+     * 
+     * @default false
+     */
+    allowExecutableConfig?: boolean;
 }
 
 /**

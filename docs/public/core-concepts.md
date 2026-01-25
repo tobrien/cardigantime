@@ -2,6 +2,27 @@
 
 This guide covers the fundamental concepts that make Cardigantime powerful and flexible for complex configuration scenarios.
 
+> **Note for Tool Developers**: This documentation is written for you - developers integrating Cardigantime into CLI applications. Your end users will benefit from these features without needing to understand the internals.
+
+## One Schema, Multiple Formats
+
+One of Cardigantime's most powerful features is automatic multi-format support. Define your configuration schema once with Zod, and your users can write configuration in their preferred format:
+
+| Format | Extensions | Best For |
+|--------|------------|----------|
+| YAML | `.yaml`, `.yml` | Human-readable, hand-edited configs |
+| JSON | `.json` | Programmatic generation, strict syntax |
+| JavaScript | `.js`, `.mjs`, `.cjs` | Dynamic configs, environment-based logic |
+| TypeScript | `.ts`, `.mts`, `.cts` | Type-safe configs, IDE support |
+
+**No additional code or configuration needed per format.** Cardigantime automatically:
+- Detects the format based on file extension
+- Parses the file using the appropriate parser
+- Validates against your Zod schema
+- Merges with CLI arguments and defaults
+
+This means tool developers write one schema, and end users get format flexibility for free.
+
 ## Configuration Sources & Precedence
 
 Cardigantime merges configuration from multiple sources with a clear precedence hierarchy:

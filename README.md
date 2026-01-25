@@ -6,7 +6,7 @@ A robust TypeScript library for configuration management in command-line applica
 
 Cardigantime is a configuration management library designed to solve the common problem of handling configuration in CLI applications. It provides a unified way to:
 
-- **Read configuration from YAML files** with intelligent file discovery
+- **Read configuration from multiple formats** (YAML, JSON, JavaScript, TypeScript) with intelligent file discovery
 - **Validate configuration** using Zod schemas for type safety
 - **Integrate with CLI frameworks** like Commander.js seamlessly
 - **Merge configuration sources** (files, CLI args, defaults) with proper precedence
@@ -23,6 +23,35 @@ Without Cardigantime, you need to manually handle:
 - Graceful error handling with actionable messages
 
 Cardigantime provides a complete, battle-tested solution for all of this complexity.
+
+### One Schema, Multiple Formats
+
+Define your configuration schema once with Zod, and Cardigantime automatically supports:
+- **YAML** (`.yaml`, `.yml`) - Human-readable, great for hand-edited configs
+- **JSON** (`.json`) - Strict syntax, ideal for programmatic generation
+- **JavaScript** (`.js`, `.mjs`, `.cjs`) - Dynamic configs with environment logic
+- **TypeScript** (`.ts`, `.mts`, `.cts`) - Type-safe configs with IDE support
+
+No additional code or schema definitions needed per format. Your users choose their preferred format, and Cardigantime handles parsing, validation, and merging automatically.
+
+## Who Uses Cardigantime?
+
+Cardigantime serves two distinct audiences:
+
+### Tool Developers
+Developers building CLI applications who want robust configuration management without the boilerplate. You integrate Cardigantime once, define your Zod schema, and get:
+- Multi-format config file support out of the box
+- Automatic CLI option generation
+- Deep merging with proper precedence
+- Hierarchical config discovery (like `.eslintrc` or `.gitignore`)
+- Type safety throughout your codebase
+
+### End Users
+Users of tools built with Cardigantime benefit from a consistent, powerful configuration experience without needing to know Cardigantime exists. They get:
+- Freedom to use their preferred config format (YAML, JSON, JS, or TS)
+- Consistent CLI options across tools
+- Clear, actionable error messages
+- Built-in config generation (`--init-config`) and analysis (`--check-config`)
 
 ## Installation
 
@@ -102,13 +131,57 @@ async function main() {
 main().catch(console.error);
 ```
 
-### Example Configuration File (`config/myapp.yaml`)
+### Configuration File Examples
 
+Cardigantime supports multiple configuration formats. Choose the one that best fits your workflow:
+
+#### YAML (`config/myapp.yaml`)
 ```yaml
 apiKey: "your-secret-api-key"
 timeout: 10000
 retries: 5
 debug: true
+```
+
+#### JSON (`config/myapp.json`)
+```json
+{
+  "apiKey": "your-secret-api-key",
+  "timeout": 10000,
+  "retries": 5,
+  "debug": true
+}
+```
+
+#### JavaScript (`config/myapp.js`)
+```javascript
+module.exports = {
+  apiKey: process.env.API_KEY || "your-secret-api-key",
+  timeout: 10000,
+  retries: 5,
+  debug: process.env.NODE_ENV === 'development'
+};
+```
+
+#### TypeScript (`config/myapp.ts`)
+```typescript
+export default {
+  apiKey: process.env.API_KEY || "your-secret-api-key",
+  timeout: 10000,
+  retries: 5,
+  debug: process.env.NODE_ENV === 'development'
+} as const;
+```
+
+**Format Priority:** When multiple config files exist, Cardigantime uses this priority order:
+1. TypeScript (`.ts`, `.mts`, `.cts`) - Highest priority
+2. JavaScript (`.js`, `.mjs`, `.cjs`)
+3. JSON (`.json`)
+4. YAML (`.yaml`, `.yml`) - Lowest priority
+
+You can override automatic detection with `--config-format`:
+```bash
+./myapp --config-format yaml  # Force YAML even if JSON exists
 ```
 
 ### Example Usage
@@ -138,8 +211,8 @@ Merges configuration from multiple sources in order of precedence:
 2. **Configuration file(s)** (medium priority)  
 3. **Default values** (lowest priority)
 
-### Flexible YAML Support
-Supports both `.yaml` and `.yml` file extensions with automatic fallback - if `config.yaml` isn't found, Cardigantime automatically tries `config.yml` (and vice versa).
+### Multi-Format Configuration
+Supports YAML (`.yaml`, `.yml`), JSON (`.json`), JavaScript (`.js`, `.mjs`, `.cjs`), and TypeScript (`.ts`, `.mts`, `.cts`) configuration files. When multiple formats exist, Cardigantime uses automatic format detection with configurable priority.
 
 ### Hierarchical Configuration Discovery
 Supports hierarchical configuration discovery, similar to how `.gitignore`, `.eslintrc`, or `package.json` work - searching up the directory tree for configuration directories.
