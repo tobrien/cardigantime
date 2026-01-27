@@ -492,4 +492,70 @@ describe('cardigantime', () => {
             expect(read).toHaveBeenCalledWith(testArgs, expectedOptions);
         });
     });
+
+    describe('defineConfig helper', () => {
+        test('should be exported from main module', async () => {
+            const { defineConfig } = await import('../src/cardigantime');
+            expect(defineConfig).toBeDefined();
+            expect(typeof defineConfig).toBe('function');
+        });
+
+        test('should return the same config object (identity function)', async () => {
+            const { defineConfig } = await import('../src/cardigantime');
+            const config = {
+                apiKey: 'test-key',
+                timeout: 5000,
+                debug: true
+            };
+
+            const result = defineConfig(config);
+
+            expect(result).toBe(config);
+            expect(result).toEqual(config);
+        });
+
+        test('should work with complex nested configs', async () => {
+            const { defineConfig } = await import('../src/cardigantime');
+            const config = {
+                database: {
+                    host: 'localhost',
+                    port: 5432,
+                    credentials: {
+                        username: 'admin'
+                    }
+                },
+                features: ['auth', 'api'],
+                metadata: {
+                    version: '1.0.0'
+                }
+            };
+
+            const result = defineConfig(config);
+
+            expect(result).toBe(config);
+            expect(result.database.credentials.username).toBe('admin');
+        });
+
+        test('should preserve type information', async () => {
+            const { defineConfig } = await import('../src/cardigantime');
+            
+            // This test verifies the function works at runtime
+            // Type checking happens at compile time
+            const config = {
+                stringValue: 'test',
+                numberValue: 42,
+                booleanValue: true,
+                arrayValue: [1, 2, 3],
+                objectValue: { nested: true }
+            };
+
+            const result = defineConfig(config);
+
+            expect(typeof result.stringValue).toBe('string');
+            expect(typeof result.numberValue).toBe('number');
+            expect(typeof result.booleanValue).toBe('boolean');
+            expect(Array.isArray(result.arrayValue)).toBe(true);
+            expect(typeof result.objectValue).toBe('object');
+        });
+    });
 }); 

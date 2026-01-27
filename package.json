@@ -1,6 +1,6 @@
 {
   "name": "@theunwalked/cardigantime",
-  "version": "0.0.22",
+  "version": "0.0.23",
   "description": "cardigantime is a tool to help you time your cardigans.",
   "type": "module",
   "main": "./dist/cardigantime.cjs",
@@ -29,7 +29,7 @@
     "dev": "vite build --watch",
     "watch": "vite build --watch",
     "test": "vitest run --coverage",
-    "precommit": "npm run lint && npm run test",
+    "precommit": "npm run lint && npm run build && npm run test",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
     "clean": "rm -rf dist",

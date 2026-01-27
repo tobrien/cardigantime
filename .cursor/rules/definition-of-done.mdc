@@ -1,0 +1,80 @@
+---
+description: Definition of Done for all code changes in cardigantime
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+alwaysApply: true
+---
+
+# Definition of Done
+
+## Critical Requirement
+
+**A task is NOT complete until `npm run precommit` passes successfully.**
+
+This is non-negotiable. Every code change, feature, bug fix, or refactor must pass the precommit checks before being considered done.
+
+## What `npm run precommit` Validates
+
+The precommit script runs:
+
+1. **Linting** (`npm run lint`) - ESLint must pass with zero errors
+2. **Tests** (`npm run test`) - All tests must pass
+3. **Coverage** - Code coverage must meet thresholds:
+   - Lines: ≥91%
+   - Statements: ≥91%
+   - Branches: ≥85%
+   - Functions: ≥91%
+
+## Before Marking Any Task Complete
+
+1. Run `npm run precommit`
+2. If it fails, fix all issues
+3. Run `npm run precommit` again
+4. Only mark the task complete when it passes
+
+## Common Issues and Fixes
+
+### Linting Errors
+
+```bash
+npm run lint:fix  # Auto-fix many issues
+```
+
+For remaining issues, manually fix based on error messages.
+
+### Test Failures
+
+- Read the test output carefully
+- Fix the failing tests or the code they're testing
+- Re-run tests with `npm test`
+
+### Coverage Below Threshold
+
+- Add tests for uncovered code paths
+- Focus on the files listed in the coverage report
+- Pay attention to branch coverage (if/else, switch cases)
+
+## Why This Matters
+
+- Ensures code quality before commits
+- Prevents broken code from entering the repository
+- Maintains consistent code style
+- Guarantees test coverage standards
+- Catches issues early in development
+
+## Quick Reference
+
+```bash
+# Full precommit check (REQUIRED before marking done)
+npm run precommit
+
+# Individual checks
+npm run lint       # Check linting only
+npm run lint:fix   # Auto-fix linting issues
+npm run test       # Run tests with coverage
+```
+
+**Remember: If `npm run precommit` doesn't pass, you're not done.**

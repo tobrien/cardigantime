@@ -444,15 +444,17 @@ describe('configure', () => {
 
             const result = await configure(mockCommand, baseOptions);
 
-            expect(result.options).toHaveLength(4); // Should have existing + config-directory + init-config + check-config options
+            expect(result.options).toHaveLength(5); // Should have existing + config-directory + init-config + check-config + config-format options
             const configDirOption = result.options.find(opt => opt.long === '--config-directory');
             const initConfigOption = result.options.find(opt => opt.long === '--init-config');
             const checkConfigOption = result.options.find(opt => opt.long === '--check-config');
+            const configFormatOption = result.options.find(opt => opt.long === '--config-format');
             const existingOption = result.options.find(opt => opt.long === '--existing');
 
             expect(configDirOption).toBeDefined();
             expect(initConfigOption).toBeDefined();
             expect(checkConfigOption).toBeDefined();
+            expect(configFormatOption).toBeDefined();
             expect(existingOption).toBeDefined();
         });
 
@@ -515,7 +517,7 @@ describe('configure', () => {
 
             // Should return the same command instance but with additional options
             expect(result).toBe(mockCommand);
-            expect(result.options.length).toBe(originalOptionsLength + 3); // configure adds 3 options: config-directory, init-config, and check-config
+            expect(result.options.length).toBe(originalOptionsLength + 4); // configure adds 4 options: config-directory, init-config, check-config, and config-format
         });
 
         test('should handle non-ArgumentError in CLI validation for coverage', async () => {
@@ -846,6 +848,55 @@ describe('configure', () => {
 
             expect(checkConfigOption).toBeDefined();
             expect(checkConfigOption?.description).toBe('Display resolved configuration with source tracking and exit');
+        });
+
+        test('should add config-format option', async () => {
+            const result = await configure(mockCommand, baseOptions);
+            const options = result.options;
+            const configFormatOption = options.find(opt => opt.long === '--config-format');
+
+            expect(configFormatOption).toBeDefined();
+            expect(configFormatOption?.description).toContain('configuration file format');
+        });
+
+        test('should validate config-format option with valid formats', async () => {
+            const result = await configure(mockCommand, baseOptions);
+            const options = result.options;
+            const configFormatOption = options.find(opt => opt.long === '--config-format');
+
+            expect(configFormatOption).toBeDefined();
+            
+            // Test valid formats
+            const validFormats = ['yaml', 'json', 'javascript', 'typescript'];
+            for (const format of validFormats) {
+                const parsed = configFormatOption?.parseArg?.(format, '');
+                expect(parsed).toBe(format);
+            }
+        });
+
+        test('should reject invalid config-format values', async () => {
+            const result = await configure(mockCommand, baseOptions);
+            const options = result.options;
+            const configFormatOption = options.find(opt => opt.long === '--config-format');
+
+            expect(configFormatOption).toBeDefined();
+            
+            // Test invalid format
+            expect(() => configFormatOption?.parseArg?.('invalid', '')).toThrow(ArgumentError);
+            expect(() => configFormatOption?.parseArg?.('xml', '')).toThrow(ArgumentError);
+        });
+
+        test('should normalize config-format to lowercase', async () => {
+            const result = await configure(mockCommand, baseOptions);
+            const options = result.options;
+            const configFormatOption = options.find(opt => opt.long === '--config-format');
+
+            expect(configFormatOption).toBeDefined();
+            
+            // Test case normalization
+            expect(configFormatOption?.parseArg?.('YAML', '')).toBe('yaml');
+            expect(configFormatOption?.parseArg?.('Json', '')).toBe('json');
+            expect(configFormatOption?.parseArg?.('JavaScript', '')).toBe('javascript');
         });
     });
 });

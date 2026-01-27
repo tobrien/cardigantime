@@ -2,6 +2,16 @@
 
 This guide will walk you through setting up Cardigantime for your CLI application, from basic usage to understanding core concepts.
 
+## Who Is This For?
+
+This documentation is for **tool developers** building CLI applications who want robust configuration management. If you're an end user of a tool built with Cardigantime, you don't need to read this - just enjoy the consistent, powerful configuration experience!
+
+As a tool developer, you'll define your configuration schema once with Zod, and Cardigantime automatically handles:
+- **Multiple config formats**: YAML, JSON, JavaScript, and TypeScript - your users choose
+- **CLI option generation**: Automatic Commander.js integration
+- **Deep merging**: Config files + CLI args + defaults with proper precedence
+- **Type safety**: Full TypeScript support throughout
+
 ## Prerequisites
 
 - Node.js 16+ 
@@ -173,10 +183,23 @@ EOF
 
 ### Configuration File Formats
 
-Cardigantime supports YAML files with `.yaml` or `.yml` extensions. If the specified file isn't found, Cardigantime automatically tries the alternative extension (e.g., if `config.yaml` doesn't exist, it tries `config.yml`).
+Cardigantime supports multiple configuration formats out of the box - define your schema once and your users can use whichever format they prefer:
 
+| Format | Extensions | Best For |
+|--------|------------|----------|
+| YAML | `.yaml`, `.yml` | Human-readable, hand-edited configs |
+| JSON | `.json` | Programmatic generation, strict syntax |
+| JavaScript | `.js`, `.mjs`, `.cjs` | Dynamic configs, environment-based logic |
+| TypeScript | `.ts`, `.mts`, `.cts` | Type-safe configs, IDE support |
+
+When multiple formats exist, Cardigantime uses this priority order (highest to lowest):
+1. TypeScript (`config.ts`)
+2. JavaScript (`config.js`)
+3. JSON (`config.json`)
+4. YAML (`config.yaml` / `config.yml`)
+
+**YAML example (`config/myapp.yaml`):**
 ```yaml
-# config/myapp.yaml (or myapp.yml)
 apiKey: "sk-abc123def456ghi789"
 timeout: 15000
 database:
@@ -185,6 +208,36 @@ database:
   ssl: true
 features: [auth, analytics, logging]
 debug: false
+```
+
+**JSON example (`config/myapp.json`):**
+```json
+{
+  "apiKey": "sk-abc123def456ghi789",
+  "timeout": 15000,
+  "database": {
+    "host": "prod.db.example.com",
+    "port": 5432,
+    "ssl": true
+  },
+  "features": ["auth", "analytics", "logging"],
+  "debug": false
+}
+```
+
+**TypeScript example (`config/myapp.config.ts`):**
+```typescript
+export default {
+  apiKey: process.env.API_KEY ?? "sk-abc123def456ghi789",
+  timeout: 15000,
+  database: {
+    host: process.env.DB_HOST ?? "prod.db.example.com",
+    port: 5432,
+    ssl: true
+  },
+  features: ["auth", "analytics", "logging"],
+  debug: process.env.NODE_ENV === "development"
+};
 ```
 
 ## Understanding Configuration Precedence
@@ -329,10 +382,11 @@ try {
 Once you have basic configuration working:
 
 1. **[Core Concepts](core-concepts.md)** - Learn about hierarchical configuration and advanced features
-2. **[API Reference](api-reference.md)** - Explore all available methods and options
-3. **[Configuration Options](configuration-options.md)** - Customize path resolution, file encoding, etc.
-4. **[Debugging & Analysis](debugging-and-analysis.md)** - Master configuration troubleshooting tools
-5. **[Advanced Usage](advanced-usage.md)** - Complex schemas, custom loggers, and environment-specific setups
+2. **[MCP Integration](mcp-integration.md)** - Add Model Context Protocol support for AI assistants
+3. **[API Reference](api-reference.md)** - Explore all available methods and options
+4. **[Configuration Options](configuration-options.md)** - Customize path resolution, file encoding, etc.
+5. **[Debugging & Analysis](debugging-and-analysis.md)** - Master configuration troubleshooting tools
+6. **[Advanced Usage](advanced-usage.md)** - Complex schemas, custom loggers, and environment-specific setups
 
 ## Common Gotchas
 

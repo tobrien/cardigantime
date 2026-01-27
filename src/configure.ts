@@ -145,6 +145,23 @@ export const configure = async <T extends z.ZodRawShape>(
         'Display resolved configuration with source tracking and exit'
     );
 
+    // Add the config format option
+    retCommand = retCommand.option(
+        '--config-format <format>',
+        'Force a specific configuration file format (yaml, json, javascript, typescript)',
+        (value: string) => {
+            const validFormats = ['yaml', 'json', 'javascript', 'typescript'];
+            const normalized = value.toLowerCase();
+            if (!validFormats.includes(normalized)) {
+                throw new ArgumentError(
+                    'config-format',
+                    `Invalid --config-format: must be one of ${validFormats.join(', ')}`
+                );
+            }
+            return normalized;
+        }
+    );
+
     return retCommand;
 }
 
