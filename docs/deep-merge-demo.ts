@@ -17,8 +17,8 @@ console.log('================================\n');
 console.log('This demonstrates deep merging of nested objects like scopeRoots.\n');
 
 // Simulate the exact scenario described:
-// 1. ../../.kodrdriv/config.yaml (lower precedence)
-// 2. ../.kodrdriv/config.yaml (higher precedence)
+// 1. ../../.myapp/config.yaml (lower precedence)
+// 2. ../.myapp/config.yaml (higher precedence)
 
 const lowerPrecedenceConfig = {
     link: null,
@@ -35,11 +35,11 @@ const higherPrecedenceConfig = {
     }
 };
 
-console.log('📁 Lower precedence config (../../.kodrdriv/config.yaml):');
+console.log('📁 Lower precedence config (../../.myapp/config.yaml):');
 console.log(JSON.stringify(lowerPrecedenceConfig, null, 2));
 console.log('');
 
-console.log('📁 Higher precedence config (../.kodrdriv/config.yaml):');
+console.log('📁 Higher precedence config (../.myapp/config.yaml):');
 console.log(JSON.stringify(higherPrecedenceConfig, null, 2));
 console.log('');
 
@@ -61,7 +61,7 @@ console.log('🚀 To use this in your project:');
 console.log('');
 console.log('const cardigantime = create({');
 console.log('  defaults: {');
-console.log('    configDirectory: \'.kodrdriv\',');
+console.log('    configDirectory: \'.myapp\',');
 console.log('    configFile: \'config.yaml\',');
 console.log('  },');
 console.log('  features: [\'config\', \'hierarchical\'],');
@@ -69,9 +69,9 @@ console.log('  configShape: YourSchema.shape');
 console.log('});');
 console.log('');
 console.log('// The hierarchical discovery will automatically find and deep merge:');
-console.log('// - ../../.kodrdriv/config.yaml');
-console.log('// - ../.kodrdriv/config.yaml');
-console.log('// - ./.kodrdriv/config.yaml (if it exists)');
+console.log('// - ../../.myapp/config.yaml');
+console.log('// - ../.myapp/config.yaml');
+console.log('// - ./.myapp/config.yaml (if it exists)');
 
 // Additional examples with more complex scenarios
 console.log('\n🔍 Additional Examples\n');
