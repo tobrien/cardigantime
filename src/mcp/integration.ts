@@ -31,7 +31,7 @@ export interface MCPIntegrationOptions {
 
     /**
      * Base URL for documentation links.
-     * @default "https://github.com/utilarium/cardigantime"
+     * @default "https://github.com/tobrien/cardigantime"
      */
     docsBaseUrl?: string;
 
