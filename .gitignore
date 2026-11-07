@@ -17,5 +17,4 @@ RELEASE_TITLE.md
 docs/dist/
 docs/node_modules/
 docs/public/README.md
-agentic-*.md
 .DS_Store
