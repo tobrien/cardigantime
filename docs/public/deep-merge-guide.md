@@ -42,7 +42,7 @@ import { create } from '@utilarium/cardigantime';
 
 const cardigantime = create({
   defaults: {
-    configDirectory: '.kodrdriv',
+    configDirectory: '.myapp',
     configFile: 'config.yaml',
   },
   features: ['config', 'hierarchical'], // Enable hierarchical discovery
@@ -54,20 +54,20 @@ const cardigantime = create({
 
 ```
 /workspace/
-├── .kodrdriv/
+├── .myapp/
 │   └── config.yaml              # Level 2 (lowest precedence)
 ├── project/
-│   ├── .kodrdriv/
+│   ├── .myapp/
 │   │   └── config.yaml          # Level 1 (medium precedence)
 │   └── subproject/
-│       ├── .kodrdriv/
+│       ├── .myapp/
 │       │   └── config.yaml      # Level 0 (highest precedence)
 │       └── your-app.js
 ```
 
 ### 3. Configuration Files
 
-**Level 2 (`/workspace/.kodrdriv/config.yaml`):**
+**Level 2 (`/workspace/.myapp/config.yaml`):**
 ```yaml
 link:
 scopeRoots:
@@ -78,7 +78,7 @@ database:
   port: 5432
 ```
 
-**Level 1 (`/workspace/project/.kodrdriv/config.yaml`):**
+**Level 1 (`/workspace/project/.myapp/config.yaml`):**
 ```yaml
 link:
 scopeRoots:
@@ -88,7 +88,7 @@ database:
   ssl: true
 ```
 
-**Level 0 (`/workspace/project/subproject/.kodrdriv/config.yaml`):**
+**Level 0 (`/workspace/project/subproject/.myapp/config.yaml`):**
 ```yaml
 scopeRoots:
   "@local": "./local-modules"
@@ -131,7 +131,7 @@ database:
 
 This is perfect for the MyApp scenario mentioned in your question:
 
-**`../../.kodrdriv/config.yaml`:**
+**`../../.myapp/config.yaml`:**
 ```yaml
 link:
 scopeRoots:
@@ -139,7 +139,7 @@ scopeRoots:
   "@kjerneverk": "../../tobrien"
 ```
 
-**`../.kodrdriv/config.yaml`:**
+**`../.myapp/config.yaml`:**
 ```yaml
 link:
 scopeRoots:
@@ -290,7 +290,7 @@ The only requirement is to enable the hierarchical feature:
 ```typescript
 const cardigantime = create({
   defaults: {
-    configDirectory: '.kodrdriv',
+    configDirectory: '.myapp',
     configFile: 'config.yaml',
   },
   features: ['config', 'hierarchical'], // This enables deep merge

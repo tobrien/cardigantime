@@ -142,7 +142,7 @@ export interface DiscoveredConfigDir {
  * Options for hierarchical configuration discovery.
  */
 export interface HierarchicalDiscoveryOptions {
-    /** Name of the configuration directory to look for (e.g., '.kodrdriv') */
+    /** Name of the configuration directory to look for (e.g., '.myapp') */
     configDirName: string;
     /** Name of the configuration file within each directory */
     configFileName: string;
@@ -190,13 +190,13 @@ export interface HierarchicalConfigResult {
  * @example
  * ```typescript
  * const dirs = await discoverConfigDirectories({
- *   configDirName: '.kodrdriv',
+ *   configDirName: '.myapp',
  *   configFileName: 'config.yaml',
  *   maxLevels: 5
  * });
  * // Returns: [
- * //   { path: '/project/.kodrdriv', level: 0 },
- * //   { path: '/project/parent/.kodrdriv', level: 1 }
+ * //   { path: '/project/.myapp', level: 0 },
+ * //   { path: '/project/parent/.myapp', level: 1 }
  * // ]
  * ```
  */
@@ -534,7 +534,7 @@ function mergeArrays(targetArray: any[], sourceArray: any[], mode: ArrayOverlapM
  * @example
  * ```typescript
  * const result = await loadHierarchicalConfig({
- *   configDirName: '.kodrdriv',
+ *   configDirName: '.myapp',
  *   configFileName: 'config.yaml',
  *   startingDir: '/project/subdir',
  *   maxLevels: 5,
