@@ -25,7 +25,7 @@ export interface CheckConfigOptions {
 
     /**
      * Base URL for documentation.
-     * @default "https://github.com/utilarium/cardigantime"
+     * @default "https://github.com/tobrien/cardigantime"
      */
     docsBaseUrl?: string;
 
@@ -225,7 +225,7 @@ function flattenConfig(
  * @returns Documentation links object
  */
 function generateDocLinks(appName: string, baseUrl?: string): CheckConfigResult['documentation'] {
-    const base = baseUrl || 'https://github.com/utilarium/cardigantime';
+    const base = baseUrl || 'https://github.com/tobrien/cardigantime';
 
     return {
         configGuide: `${base}#configuration`,
